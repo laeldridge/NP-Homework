@@ -1,0 +1,85 @@
+---
+title: "HW6"
+author: "Laura Eldridge"
+date: "4/12/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Download Data
+```{r}
+pete <- read.csv("C:\\Users\\Laura\\Desktop\\Stats 488\\Homework\\ill_school_data.csv", header = T)
+```
+## Describe the Data
+```{r}
+summary(pete)
+```
+This is a summary of census data collected from 500 students in Illinois. They collected both quantifiable information on the student's statistics of Age, Grade, their dominant hand, height, foot length and personal questions, such as their preferences, opinions and lifestyles.
+
+
+This data has some parts that seen impossible, it's only high school students, yet the ages span 12-99 years, indicating there is some incorrect data. Also, the data is collected from many different years, giving it a lot of variety. Every section except for data year has missing or blank data.
+
+
+## Testing for Independance
+```{r}
+attach(pete)
+george <- table(Handed,Favorite_Season)
+george
+chisq.test(george, correct = F)
+```
+If we define alpha as 0.05, we reject the null hypothesis that what hand is dominant is idenpendant of the student's favorite season. We conclude there is some dependence.
+
+```{r}
+library(dplyr)
+frank <-  read.csv("C:\\Users\\Laura\\Desktop\\Stats 488\\Homework\\ill_school_data.csv", header = T, na.strings = c("", "NA"))
+frank <- frank%>% na.omit()
+attach(frank)
+joe <- table(Handed,Favorite_Season)
+joe
+chisq.test(joe)
+```
+When the missing data is omited, we fail to reject the null hypothesis that the two variables are independant. Which makes much more sense, because in the real world, there is no possible way these things are connected.
+
+Here the missing data can and should be omitted, because otherwise it clouds the results and gives us an errorous conclusion.
+
+I used the Chi-Squared test because it is the most appropriate for testing independance for multi-leveled variables. Fisher's only works on two by two tables and McNemars already assumes there is a connection.
+
+
+## Linear Regression
+Cleaning
+```{r}
+pete$Height_cm = as.numeric(gsub("\\$", "", pete$Height_cm))
+pete$Armspan_cm = as.numeric(gsub("\\$", "", pete$Armspan_cm))
+```
+```{r}
+library(mice)
+jme <- cbind(Height_cm, Armspan_cm)
+set.seed(1909)
+imputedat <- mice(jme, m=10, method = "cart")
+
+imputedmods <-with(imputedat, lm(Height_cm~Armspan_cm))
+
+summary(pool(imputedmods))
+```
+
+Slope is 0.5103647 with a standard error of 0.04175821
+Intercept is 26.3188458 with a standard error of 2.57752937
+
+
+## Random Forest
+```{r}
+imputedat2 <- mice(jme, m=10, method = "rf")
+
+imputedmods2 <-with(imputedat2, lm(Height_cm~Armspan_cm))
+
+summary(pool(imputedmods2))
+```
+
+The random forest gave me the same intercept and slope as the cart model
+
+
+
+## GitHub Link
